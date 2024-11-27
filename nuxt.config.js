@@ -6,4 +6,8 @@ export default defineNuxtConfig({
   build: {
     transpile: ['vuetify'], // 转译 Vuetify 依赖
   },
+  modules: ['@nuxt/http'],
+  http: {
+    baseURL: 'https://yjlian.cn/api/login.php',  // 你的后端 API 地址
+  },
 })

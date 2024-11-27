@@ -3,7 +3,7 @@
     <header>
       <h1>My Nuxt Application</h1>
       <div>
-        <NuxtLink to="/login">登录</NuxtLink>
+        <NuxtLink to="/user">登录</NuxtLink>
       </div>
     </header>
     <main>
