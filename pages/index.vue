@@ -6,8 +6,12 @@
         <v-card class="elevation-0" style="width: 300px; height: 300px">
           <v-card-title class="text-h5 justify-center">登录</v-card-title>
 
-          <!-- Login Form -->
-          <v-form ref="form" v-model="valid" lazy-validation>
+          <v-form
+            ref="form"
+            v-model="valid"
+            lazy-validation
+            @keyup.enter="onSubmit"
+          >
             <v-text-field
               v-model="username"
               label="用户名"
@@ -23,7 +27,13 @@
               required
             ></v-text-field>
 
-            <v-btn color="primary" block :disabled="!valid" @click="onSubmit">
+            <v-btn
+              color="primary"
+              block
+              :loading="loading"
+              :disabled="!valid || loading"
+              @click="onSubmit"
+            >
               登录
             </v-btn>
           </v-form>
@@ -33,53 +43,61 @@
   </div>
 </template>
 
-<script>
-import axios from "axios";
+<script setup>
+import { ref } from "vue";
+import { useToast } from "vue-toastification";
+import { useApi } from "~/composables/useApi";
+
+const toast = useToast();
+const api = useApi();
+
 definePageMeta({
   layout: "blank",
 });
 
-export default {
-  data() {
-    return {
-      username: "",
-      password: "",
-      valid: false,
-      usernameRules: [
-        (v) => !!v || "用户名不能为空",
-        (v) => (v && v.length >= 3) || "用户名至少 3 个字符",
-      ],
-      passwordRules: [
-        (v) => !!v || "密码不能为空",
-        (v) => (v && v.length >= 6) || "密码至少 6 个字符",
-      ],
-    };
-  },
-  methods: {
-    onSubmit() {
-      if (this.username && this.password) {
-        axios
-          .post("https://yjlian.cn/api/login.php", {
-            username: this.username,
-            password: this.password,
-          })
-          .then((response) => {
-            console.log("后端返回的数据:", response.data);
-            if (response.data.status === "success") {
-              // this.$toast("登录成功！");
-              this.$router.push({ name: "user" });
-            } else {
-              console.error("登录失败:", response.data.message); // 打印错误信息
-            }
-          })
-          .catch((error) => {
-            console.error("请求失败，错误信息:", error); // 打印请求失败的错误信息
-          });
-      } else {
-        console.log("用户名或密码为空");
-      }
-    },
-  },
+const loading = ref(false);
+const username = ref("");
+const password = ref("");
+const valid = ref(false);
+const form = ref(null);
+
+const usernameRules = [
+  (v) => !!v || "用户名不能为空",
+  (v) => (v && v.length >= 3) || "用户名至少 3 个字符",
+];
+
+const passwordRules = [
+  (v) => !!v || "密码不能为空",
+  (v) => (v && v.length >= 6) || "密码至少 6 个字符",
+];
+
+const onSubmit = async () => {
+  if (!form.value.validate()) {
+    return;
+  }
+
+  loading.value = true;
+  try {
+    const response = await api.login(username.value, password.value);
+
+    console.log("服务器响应:", response.data);
+
+    if (response.data.status === "success") {
+      toast.success("登录成功！");
+      username.value = "";
+      password.value = "";
+      form.value.resetValidation();
+      await navigateTo("/user");
+    } else {
+      toast.error(response.data.message || "登录失败");
+    }
+  } catch (error) {
+    console.error("完整错误信息:", error);
+    console.error("错误响应:", error.response?.data);
+    toast.error(error.response?.data?.message || "请求失败");
+  } finally {
+    loading.value = false;
+  }
 };
 </script>
 
